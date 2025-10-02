@@ -27,7 +27,7 @@ export default function EditForm({ drive }: { drive: any }) {
     const res = await fetch(`/api/drives/${drive._id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, tags: form.tags.split(",").map((t) => t.trim()) }),
+      body: JSON.stringify({ ...form, tags: form.tags.split(",").map((t:string) => t.trim()) }),
     });
 
     if (res.ok) {

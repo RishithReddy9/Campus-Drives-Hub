@@ -1,27 +1,57 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { NextAuthOptions } from "next-auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "OTP Login",
       credentials: {
         email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
+        otp: { label: "OTP", type: "text" },
       },
       async authorize(credentials) {
-        // ✅ Replace with DB check if you want multiple admins
+        await dbConnect();
+
+        const user = await User.findOne({ email: credentials?.email });
+        if (!user) return null;
+
+        // verify otp
         if (
-          credentials?.email === process.env.ADMIN_EMAIL &&
-          credentials?.password === process.env.ADMIN_PASS
+          user.otp === credentials?.otp &&
+          user.otpExpiry &&
+          user.otpExpiry > new Date()
         ) {
-          return { id: "1", name: "Admin", email: credentials?.email };
+          // clear OTP after use
+          user.otp = undefined;
+          user.otpExpiry = undefined;
+          await user.save();
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+          };
         }
+
         return null;
       },
     }),
   ],
+
   session: { strategy: "jwt" },
+
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) token.role = (user as any).role;
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) session.user.role = token.role as string;
+      return session;
+    },
+  },
   pages: {
     signIn: "/login",
   },

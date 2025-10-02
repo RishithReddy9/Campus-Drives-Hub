@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <section>
@@ -5,8 +7,8 @@ export default function Home() {
       <p className="mt-4 text-gray-600">A community-sourced collection of on-campus drives and interview experiences.</p>
 
       <div className="mt-6 space-y-4">
-        <a href="/drives" className="block p-4 bg-white shadow rounded">Browse Drives</a>
-        <a href="/resources" className="block p-4 bg-white shadow rounded">Explore Resources</a>
+        <Link href="/drives" className="block p-4 bg-white shadow rounded">Browse Drives</Link>
+        <Link href="/resources" className="block p-4 bg-white shadow rounded">Explore Resources</Link>
       </div>
     </section>
   )

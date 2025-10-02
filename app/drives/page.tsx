@@ -1,26 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
+import { useState } from "react";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DrivesPage() {
-  const [drives, setDrives] = useState<any[]>([]);
+  const { data: drives, error, isLoading } = useSWR("/api/drives", fetcher);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
 
-  useEffect(() => {
-    fetch("/api/drives")
-      .then((res) => res.json())
-      .then((data) => setDrives(data));
-  }, []);
+  if (error) return <p className="text-red-500">❌ Failed to load drives.</p>;
 
-  const filteredDrives = drives.filter((d) => {
+  const filteredDrives = (drives || []).filter((d: any) => {
     const searchText = search.toLowerCase();
     return (
       (!filter || d.company.toLowerCase().includes(filter.toLowerCase())) &&
       (d.company.toLowerCase().includes(searchText) ||
-       d.role.toLowerCase().includes(searchText) ||
-       d.summary.toLowerCase().includes(searchText))
+        d.role.toLowerCase().includes(searchText) ||
+        d.summary.toLowerCase().includes(searchText))
     );
   });
 
@@ -42,21 +41,27 @@ export default function DrivesPage() {
           className="border p-2 rounded"
         >
           <option value="">All Companies</option>
-          {[...new Set(drives.map((d) => d.company))].map((c) => (
-            <option key={c} value={c}>{c}</option>
+          {[...new Set((drives || []).map((d: any) => d.company))].map((c:any) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
       </div>
 
       <div className="grid gap-4">
-        {filteredDrives.length > 0 ? (
-          filteredDrives.map((d) => (
+        {isLoading ? (
+          "Loading..."
+        ) : filteredDrives.length > 0 ? (
+          filteredDrives.map((d: any) => (
             <article key={d._id} className="p-4 bg-white shadow rounded">
               <Link href={`/drives/${d._id}`}>
-                <h2 className="font-semibold">{d.company} — {d.role}</h2>
+                <h2 className="font-semibold">
+                  {d.company} — {d.role}
+                </h2>
+                <p className="text-sm text-gray-500">{d.date}</p>
+                <p className="mt-2">{d.summary}</p>
               </Link>
-              <p className="text-sm text-gray-500">{d.date}</p>
-              <p className="mt-2">{d.summary}</p>
             </article>
           ))
         ) : (

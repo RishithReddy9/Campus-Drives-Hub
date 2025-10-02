@@ -1,6 +1,6 @@
 // app/drives/[id]/page.tsx  (server component)
 import dbConnect from "@/lib/mongodb";
-import Drive, { IDrive } from "@/models/drives";
+import Resource, { IResource } from "@/models/Resource";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -14,35 +14,28 @@ interface DrivePageProps {
 export default async function DrivePage({ params }: DrivePageProps) {
   const { id } = await params;
   await dbConnect();
-  const drive: IDrive | null = await Drive.findById(id).lean<IDrive>();
+  const resource: IResource | null = await Resource.findById(id).lean<IResource>();
   const session = await getServerSession(authOptions);
 
-  if (!drive) return notFound();
+  if (!resource) return notFound();
 
-  const markdown = drive.experience ?? "";
+  const markdown = resource.description ?? "";
 
   return (
     <article className="p-6 bg-white shadow rounded">
-      <h1 className="text-2xl font-bold">{drive.company} — {drive.role}</h1>
-      <p className="text-gray-500 text-sm">{drive.date}</p>
-      <p className="mt-4">{drive.summary}</p>
-
-      <h2 className="mt-6 font-semibold">Full Experience</h2>
+      <h1 className="text-2xl font-bold">{resource.title}</h1>
+      <p className="mt-4">{resource.category}</p>
 
       {/* pass markdown to client component */}
       <div className="mt-2 prose max-w-none bg-white">
         <MarkdownClient markdown={markdown} />
       </div>
 
-      <p className="mt-6 text-sm text-gray-500">Shared by: {drive.author || "Anonymous"}</p>
+      <a href={resource.link} target="_blank" className="text-blue-600 underline mt-2 inline-block">
+            Open Resource
+        </a>
 
-      <div className="flex gap-2 mt-4">
-        {drive.tags?.map((tag: string) => (
-          <span key={tag} className="px-2 py-1 text-xs bg-gray-200 rounded">{tag}</span>
-        ))}
-      </div>
-
-      {session && <AdminControls id={id} />}
+      {session && session.user.role === "admin" && <AdminControls id={id} />}
     </article>
   );
 }

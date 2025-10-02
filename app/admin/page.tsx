@@ -20,7 +20,7 @@ export default async function AdminPage() {
 
       <div className="mt-6 space-y-4">
         <Link href="/submit" className="block p-3 bg-gray-100 rounded">➕ Add New Drive</Link>
-        <Link href="/resources" className="block p-3 bg-gray-100 rounded">📚 Manage Resources</Link>
+        <Link href="/submit-resources" className="block p-3 bg-gray-100 rounded">📚 Manage Resources</Link>
       </div>
     </section>
   );
