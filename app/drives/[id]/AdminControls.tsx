@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function AdminControls({ id }: { id: string }) {
@@ -27,12 +28,12 @@ export default function AdminControls({ id }: { id: string }) {
       >
         Delete
       </button>
-      <a
+      <Link
         href={`/admin/edit/${id}`}
         className="px-3 py-1 bg-yellow-500 text-white rounded"
       >
         Edit
-      </a>
+      </Link>
     </div>
   );
 }

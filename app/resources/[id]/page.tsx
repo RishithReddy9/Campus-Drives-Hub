@@ -1,41 +1,97 @@
-// app/drives/[id]/page.tsx  (server component)
-import dbConnect from "@/lib/mongodb";
-import Resource, { IResource } from "@/models/Resource";
-import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+'use client';
+import { IResource } from "@/models/Resource";
 import AdminControls from "./AdminControls";
 import MarkdownClient from "@/components/MarkdownClient";
+import { useEffect, useState, use } from "react";
+import { useSession } from "next-auth/react";
+import SubmitResource from "@/components/SubmitResource";
+import Link from "next/link";
 
-interface DrivePageProps {
-  params: { id: string };
-}
+export default function DrivePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const {data: session} = useSession();
+  const [children, setChildren] = useState<IResource[]>([]);
+  const [resource, setResource] = useState<IResource>();
+  const [loading, setLoading] = useState(true);
 
-export default async function DrivePage({ params }: DrivePageProps) {
-  const { id } = await params;
-  await dbConnect();
-  const resource: IResource | null = await Resource.findById(id).lean<IResource>();
-  const session = await getServerSession(authOptions);
+  useEffect(() => {
+    setLoading(true);
+    getResource(id).then((res) => {
+      if(!res) return;
+      setResource(res);
+    }).catch((err) => { console.error(err); }).finally(() => setLoading(false));
+  }, []);
 
-  if (!resource) return notFound();
+  useEffect(() => {
+    setLoading(true);
+    if(resource?.type=="folder"){
+      getChildren(id).then((children) => {
+        setChildren(children);
+      }).catch((err) => { console.error(err); });
+      console.log(children);
+    }
+    setLoading(false);
+  }, [resource]);
 
-  const markdown = resource.description ?? "";
+  const getResource = async (id: string) => { 
+    const res = await fetch("/api/resources/" + id, {
+      method: "GET",
+    });
+    if (res.ok) {
+      return res.json();
+    } else {
+      return null;
+    }
+  }
+
+  const getChildren = async (parentId: string) => { 
+    const res = await fetch("/api/resources/" + parentId + "/children", {
+      method: "GET",
+    });
+
+    if (res.ok) {
+      return res.json();
+    } else {
+      return [];
+    }
+
+  }
+
+  const markdown = resource?.content ?? "";
+  
 
   return (
-    <article className="p-6 bg-white shadow rounded">
-      <h1 className="text-2xl font-bold">{resource.title}</h1>
-      <p className="mt-4">{resource.category}</p>
+    <div>
+      {session?.user.role==='admin' && <SubmitResource currentFolderId={id} />}
+      {loading && <p>Loading...</p>}
+      { resource?.type === "folder" &&
+        <div className="p-6 bg-white shadow rounded">
+          <h1 className="text-2xl font-bold">{resource.title}</h1>
+          {
+            children.length>0 && children.map((child) => (
+              <article key={child.title} className="mt-4 p-4 border rounded">
+                <Link href={`/resources/${child._id}`}>
+                  <h2 className="text-xl font-semibold mb-2">{child.title}</h2>
+                </Link>
+              </article>
+            ))
+          }
+          {children.length===0 && <p className="mt-4 text-gray-500">No resources found in this folder.</p>}
+          {children.length===0 && session?.user.role==='admin' && <AdminControls id={id} />}
+        </div>
+      }
 
-      {/* pass markdown to client component */}
-      <div className="mt-2 prose max-w-none bg-white">
-        <MarkdownClient markdown={markdown} />
-      </div>
+      { resource?.type === "blog" &&
+        <article className="p-6 bg-white shadow rounded">
+          <h1 className="text-2xl font-bold">{resource.title}</h1>
+          
+          <div className="mt-2 prose max-w-none bg-white">
+            <MarkdownClient markdown={markdown} />
+          </div>
 
-      <a href={resource.link} target="_blank" className="text-blue-600 underline mt-2 inline-block">
-            Open Resource
-        </a>
-
-      {session && session.user.role === "admin" && <AdminControls id={id} />}
-    </article>
+          {session && session.user.role === "admin" && <AdminControls id={id} />}
+        </article>
+      }
+    </div>
   );
 }

@@ -6,16 +6,16 @@ export default function AdminControls({ id }: { id: string }) {
   const router = useRouter();
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this drive?")) return;
+    if (!confirm("Are you sure you want to delete this?")) return;
 
     const res = await fetch(`/api/resources/${id}`, { method: "DELETE" });
 
     if (res.ok) {
-      alert("✅ Drive deleted!");
-      router.push("/drives");
+      alert("✅ Resource deleted!");
+      router.push("/resources");
       router.refresh();
     } else {
-      alert("❌ Error deleting drive");
+      alert("❌ Error deleting Resource");
     }
   };
 

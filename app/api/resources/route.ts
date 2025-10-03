@@ -5,7 +5,7 @@ import Resource from "@/models/Resource";
 // GET all resources
 export async function GET() {
   await dbConnect();
-  const resources = await Resource.find({});
+  const resources = (await Resource.find({parentId: null}));
   return NextResponse.json(resources);
 }
 

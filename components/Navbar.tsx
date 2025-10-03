@@ -22,11 +22,6 @@ export default function Navbar() {
           {!hideAuthButtons && 
             (session ? (
             <>
-              {session.user?.role === "admin" && (
-                <Link href="/admin" className="text-blue-600 font-medium">
-                  Admin
-                </Link>
-              )}
               <span className="text-sm text-emerald-400">
                 Hi, {session.user?.email}
               </span>

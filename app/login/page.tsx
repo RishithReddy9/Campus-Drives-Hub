@@ -48,6 +48,7 @@ export default function LoginPage() {
     });
     if (res?.error){
       setError("Invalid OTP");
+      setLoading(false);
       return;
     }
 

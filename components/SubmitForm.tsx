@@ -5,56 +5,169 @@ import { useState } from "react";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 
-// client-only dynamic imports
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
 
+type RoundItem = { date: string; round: string };
+
+type FormState = {
+  company: string;
+  summary: string;
+  experiences: string[];
+  tags: string; // comma separated in UI
+  pdfs: string[]; // s3 keys
+  compensation: string;
+  skills: string; // comma separated
+  roles: string; // comma separated
+  resources: string[]; // comma separated (URLs)
+  rounds: RoundItem[];
+};
+
+const DEFAULT_FORM: FormState = {
+  company: "",
+  summary: "",
+  experiences: [""],
+  tags: "",
+  pdfs: [],
+  compensation: "",
+  skills: "",
+  roles: "",
+  resources: [],
+  rounds: [], // start empty
+};
+
 export default function SubmitForm() {
-  const [form, setForm] = useState({
-    company: "",
-    role: "",
-    date: "",
-    summary: "",
-    experience: "", // markdown
-    author: "",
-    tags: "",
-  });
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [status, setStatus] = useState<null | string>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingResources, setUploadingResources] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // Generic input change for simple text inputs
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleExperienceChange = (value?: string) => {
-    setForm((prev) => ({ ...prev, experience: value ?? "" }));
+  // Experiences handlers
+  const handleExperienceChange = (index: number, value?: string) => {
+    const updated = [...form.experiences];
+    updated[index] = value ?? "";
+    setForm((prev) => ({ ...prev, experiences: updated }));
+  };
+  const addExperience = () => setForm((prev) => ({ ...prev, experiences: [...prev.experiences, ""] }));
+  const removeExperience = (index: number) => {
+    if (form.experiences.length === 1) return;
+    setForm((prev) => ({ ...prev, experiences: prev.experiences.filter((_, i) => i !== index) }));
   };
 
+  // Rounds handlers (array of {date, round})
+  const handleRoundChange = (index: number, field: "date" | "round", value: string) => {
+    const updated = [...form.rounds];
+    updated[index] = { ...updated[index], [field]: value };
+    setForm((prev) => ({ ...prev, rounds: updated }));
+  };
+  const addRound = () => setForm((prev) => ({ ...prev, rounds: [...prev.rounds, { date: "", round: "" }] }));
+  const removeRound = (index: number) =>
+    setForm((prev) => ({ ...prev, rounds: prev.rounds.filter((_, i) => i !== index) }));
+
+  // PDF upload (expects /api/upload returns { key })
+  const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setStatus(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok && data?.key) {
+        setForm((prev) => ({ ...prev, pdfs: [...prev.pdfs, data.key] }));
+      } else {
+        setStatus(`❌ PDF upload failed: ${data?.error ?? res.statusText}`);
+      }
+    } catch (err: any) {
+      setStatus(`❌ PDF upload failed: ${err?.message ?? "Network error"}`);
+    } finally {
+      setUploading(false);
+      // reset input value to allow re-upload of same file if needed
+      (e.target as HTMLInputElement).value = "";
+    }
+  };
+
+  const removePdf = (index: number) => {
+    setForm((prev) => ({ ...prev, pdfs: prev.pdfs.filter((_, i) => i !== index) }));
+  };
+
+  const handleUploadPdfResources = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingResources(true);
+    setStatus(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok && data?.key) {
+        setForm((prev) => ({ ...prev, resources: [...prev.resources, data.key] }));
+      } else {
+        setStatus(`❌ PDF upload failed: ${data?.error ?? res.statusText}`);
+      }
+    } catch (err: any) {
+      setStatus(`❌ PDF upload failed: ${err?.message ?? "Network error"}`);
+    } finally {
+      setUploadingResources(false);
+      // reset input value to allow re-upload of same file if needed
+      (e.target as HTMLInputElement).value = "";
+    }
+  };
+
+  const removePdfResources = (index: number) => {
+    setForm((prev) => ({ ...prev, pdfs: prev.pdfs.filter((_, i) => i !== index) }));
+  };
+
+  // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus(null);
 
-    // basic validation
-    if (
-      !form.company.trim() ||
-      !form.role.trim() ||
-      !form.date.trim() ||
-      !form.summary.trim() ||
-      !form.experience.trim()
-    ) {
-      setStatus("Please fill required fields (company, role, date, summary, experience).");
+    // Basic validation
+    if (!form.company.trim() || !form.summary.trim() || !form.compensation.trim()) {
+      setStatus("Please fill required fields: company, role, date, summary, compensation.");
+      return;
+    }
+    if (form.experiences.some((exp) => !exp.trim())) {
+      setStatus("Please fill all experience blocks or remove empty ones.");
+      return;
+    }
+    // rounds validation: ensure each round has date and round name (if any rounds present)
+    if (form.rounds.some((r) => !r.date || !r.round)) {
+      setStatus("Please fill all rounds (date and round name) or remove incomplete ones.");
       return;
     }
 
     setSubmitting(true);
     setStatus("Submitting...");
 
+    // Build payload to match schema
     const payload = {
-      ...form,
-      tags: form.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
+      company: form.company.trim(),
+      summary: form.summary.trim(),
+      experiences: form.experiences.map((s) => s.trim()),
+      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+      pdfs: form.pdfs, // array of keys
+      compensation: form.compensation.trim(),
+      skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+      roles: form.roles.split(",").map((r) => r.trim()).filter(Boolean),
+      resources: form.resources,
+      // convert rounds to ISO strings for server (or Date objects on server)
+      rounds: form.rounds.map((r) => ({ date: r.date, round: r.round.trim() })),
     };
 
     try {
@@ -66,7 +179,7 @@ export default function SubmitForm() {
 
       if (res.ok) {
         setStatus("✅ Submitted successfully!");
-        setForm({ company: "", role: "", date: "", summary: "", experience: "", author: "", tags: "" });
+        setForm(DEFAULT_FORM);
       } else {
         const json = await res.json().catch(() => null);
         setStatus(`❌ Error: ${json?.error ?? res.statusText}`);
@@ -79,98 +192,130 @@ export default function SubmitForm() {
   };
 
   return (
-    <section className="max-w-2xl mx-auto bg-white shadow rounded p-6">
+    <section className="max-w-3xl mx-auto bg-white shadow rounded p-6">
       <h1 className="text-2xl font-bold mb-4">Submit Interview Experience</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            name="company"
-            placeholder="Company"
-            value={form.company}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-            required
-          />
-          <input
-            name="role"
-            placeholder="Role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-            required
-          />
+          <input name="company" placeholder="Company" value={form.company} onChange={handleChange} className="w-full border p-2 rounded" required />
+          <input name="compensation" placeholder="Compensation (e.g. 6 LPA)" value={form.compensation} onChange={handleChange} className="w-full border p-2 rounded" required />
         </div>
 
-        <input
-          type="date"
-          name="date"
-          value={form.date}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        />
+        <input name="summary" placeholder="Short Summary" value={form.summary} onChange={handleChange} className="w-full border p-2 rounded" required />
 
-        <input
-          name="summary"
-          placeholder="Short Summary"
-          value={form.summary}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        />
-
+        {/* Experiences (Markdown) */}
         <div>
-          <label className="block text-sm font-medium mb-2">Full Experience — Markdown</label>
-          {/* Editor */}
-          <MDEditor
-            value={form.experience}
-            onChange={handleExperienceChange}
-            height={300}
-            visibleDragbar={false}
-            preview="live"
-            textareaProps={{
-              placeholder: "Write your interview experience here using Markdown...",
-            }}
-          />
-          <p className="text-xs text-gray-500 mt-1">Use Markdown (headings, lists, code blocks, links). Preview is live below the editor.</p>
+          <label className="block text-sm font-medium mb-2">Experiences (Markdown)</label>
+          {form.experiences.map((exp, i) => (
+            <div key={i} className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-medium">Experience {i + 1}</span>
+                {form.experiences.length > 1 && (
+                  <button type="button" onClick={() => removeExperience(i)} className="text-red-500 text-sm">Remove</button>
+                )}
+              </div>
+              <MDEditor value={exp} onChange={(val) => handleExperienceChange(i, val)} height={220} preview="live" textareaProps={{ placeholder: "Write experience in Markdown..." }} />
+            </div>
+          ))}
+          <button type="button" onClick={addExperience} className="mt-2 text-sm px-3 py-1 rounded bg-green-500 text-white">+ Add Experience</button>
         </div>
 
+        {/* Rounds */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Rounds (date & name)</label>
+          {form.rounds.length === 0 && <p className="text-sm text-gray-500 mb-2">No rounds added — optionally add interview rounds.</p>}
+          {form.rounds.map((r, i) => (
+            <div key={i} className="flex gap-2 items-center mb-2">
+              <input type="date" value={r.date} onChange={(e) => handleRoundChange(i, "date", e.target.value)} className="border p-2 rounded" />
+              <input placeholder="Round name (e.g. Technical, HR)" value={r.round} onChange={(e) => handleRoundChange(i, "round", e.target.value)} className="border p-2 rounded flex-1" />
+              <button type="button" onClick={() => removeRound(i)} className="text-red-500">Remove</button>
+            </div>
+          ))}
+          <button type="button" onClick={addRound} className="mt-2 text-sm px-3 py-1 rounded bg-indigo-600 text-white">+ Add Round</button>
+        </div>
+
+        {/* Upload JDs */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Attach JD(s)</label>
+          <input type="file" accept="application/pdf" onChange={handleUploadPdf} className="mb-2" />
+          {uploading && <p className="text-sm text-gray-500">Uploading...</p>}
+          <ul className="mt-2">
+            {form.pdfs.map((pdf, i) => (
+              <li key={i} className="flex justify-between items-center text-sm border p-2 rounded mb-1">
+                <span className="truncate max-w-[70%]">{pdf}</span>
+                <button type="button" onClick={() => removePdf(i)} className="text-red-500">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Tags / skills / roles / resources */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            name="author"
-            placeholder="Your Name (optional)"
-            value={form.author}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          />
-          <input
-            name="tags"
-            placeholder="Tags (comma separated)"
-            value={form.tags}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          />
+          <input name="tags" placeholder="Tags (comma separated)" value={form.tags} onChange={handleChange} className="w-full border p-2 rounded" />
+          <input name="skills" placeholder="Skills (comma separated)" value={form.skills} onChange={handleChange} className="w-full border p-2 rounded" />
+          <input name="roles" placeholder="Other roles (comma separated)" value={form.roles} onChange={handleChange} className="w-full border p-2 rounded" />
         </div>
 
+        {/* Upload Resources */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Attach Resource(s) (Optional)</label>
+          <input type="file" accept="application/pdf" onChange={handleUploadPdfResources} className="mb-2" />
+          {uploadingResources && <p className="text-sm text-gray-500">Uploading...</p>}
+          <ul className="mt-2">
+            {form.resources.map((pdf, i) => (
+              <li key={i} className="flex justify-between items-center text-sm border p-2 rounded mb-1">
+                <span className="truncate max-w-[70%]">{pdf}</span>
+                <button type="button" onClick={() => removePdfResources(i)} className="text-red-500">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Submit */}
         <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60"
-            disabled={submitting}
-          >
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60" disabled={submitting}>
             {submitting ? "Submitting..." : "Submit"}
           </button>
           {status && <p className="text-sm">{status}</p>}
         </div>
       </form>
 
-      {/* Compiled preview block (read-only) */}
+      {/* Live Preview */}
       <div className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Live Preview</h2>
         <div className="prose max-w-none border rounded p-4 bg-gray-50">
-          {/* Use @uiw/react-markdown-preview's component */}
-          <MarkdownPreview source={form.experience || "Nothing yet..."} />
+          {form.experiences.map((exp, i) => (
+            <div key={i} className="mb-6">
+              <h3 className="text-md font-semibold">Experience {i + 1}</h3>
+              <MarkdownPreview source={exp || "Nothing yet..."} wrapperElement={{ "data-color-mode": "light" }} />
+            </div>
+          ))}
+
+          {form.rounds.length > 0 && (
+            <div className="mb-4">
+              <h3 className="font-medium">Rounds</h3>
+              <ul className="list-disc pl-5">
+                {form.rounds.map((r, i) => <li key={i}>{r.date} — {r.round}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {form.pdfs.length > 0 && (
+            <div>
+              <h3 className="font-medium mt-4">Attached PDFs</h3>
+              <ul className="list-disc pl-5">
+                {form.pdfs.map((pdf, i) => <li key={i}>{pdf}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {form.skills && (
+            <div className="mt-4">
+              <h3 className="font-medium">Skills</h3>
+              <p>{form.skills.split(",").map(s => s.trim()).filter(Boolean).join(", ")}</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
