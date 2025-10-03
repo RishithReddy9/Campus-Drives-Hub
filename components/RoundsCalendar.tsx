@@ -45,7 +45,7 @@ export default function CalendarPage() {
 
   return (
     <section className="p-6 bg-white dark:bg-gray-900 shadow rounded-lg">
-      <div className="h-[70vh] rounded-lg border border-gray-200 dark:border-gray-100 overflow-hidden dark:text-gray-200">
+      <div className="md:h-[70vh] rounded-lg border border-gray-200 dark:border-gray-100 overflow-hidden dark:text-gray-200 h-[50vh]">
         <Calendar
           localizer={localizer}
           events={events}

@@ -27,6 +27,8 @@ export default function Home() {
         <div className="mt-8">
           <Link
             href="https://forms.gle/i1KoR178PVmUgph28"
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-8 py-4 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
           >
             Become a Member
@@ -88,6 +90,8 @@ export default function Home() {
         <div className="mt-8">
           <Link
             href="https://forms.gle/i1KoR178PVmUgph28"
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-8 py-4 bg-white text-blue-700 font-semibold rounded-lg shadow hover:bg-gray-200 transition"
           >
             Become a Member

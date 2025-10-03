@@ -17,11 +17,18 @@ import { usePathname } from "next/navigation";
 import { Calendar } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { Session } from "next-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function NavbarTop() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const menuItems = [
+    "Drives",
+    "Resources",
+    "Calendar",
+  ];
 
   const hideAuthButtons = pathname === "/login";
   return (
@@ -40,7 +47,11 @@ export default function NavbarTop() {
           "data-[active=true]:after:rounded-[2px]",
           "data-[active=true]:after:bg-primary",
         ],
-      }}>
+      }} isBordered isMenuOpen={isMenuOpen} onMenuOpenChange={setIsMenuOpen}>
+        <NavbarMenuToggle
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          className="sm:hidden"
+        />
       <NavbarBrand>
         {/* <AcmeLogo /> */}
         <Link href={"/"}>
@@ -48,6 +59,7 @@ export default function NavbarTop() {
         </Link>
       </NavbarBrand>
       <NavbarContent className="hidden sm:flex gap-4" justify="center">
+
         <NavbarItem data-active={pathname.startsWith("/drives")}>
           <Link color="foreground" href="/drives">
             Drives
@@ -86,6 +98,22 @@ export default function NavbarTop() {
               </NavbarItem> )
             )
         }
+        <NavbarMenu>
+        {menuItems.map((item, index) => (
+          <NavbarMenuItem key={`${item}-${index}`}>
+            <Link
+              className="w-full text-2xl"
+              color={
+                index === 2 ? "primary" : index === menuItems.length - 1 ? "danger" : "foreground"
+              }
+              href={item.toLowerCase()}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {item}
+            </Link>
+          </NavbarMenuItem>
+        ))}
+      </NavbarMenu>
         <NavbarItem>
           <ThemeSwitcher/>
         </NavbarItem>
