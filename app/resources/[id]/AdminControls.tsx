@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@heroui/button";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function AdminControls({ id }: { id: string }) {
@@ -21,18 +23,19 @@ export default function AdminControls({ id }: { id: string }) {
 
   return (
     <div className="flex gap-2 mt-6">
-      <button
-        onClick={handleDelete}
+      <Button
+        onPress={handleDelete}
         className="px-3 py-1 bg-red-600 text-white rounded"
       >
         Delete
-      </button>
-      <a
-        href={`/admin/edit-resource/${id}`}
+      </Button>
+      <Button
         className="px-3 py-1 bg-yellow-500 text-white rounded"
       >
-        Edit
-      </a>
+        <Link href={`/admin/edit-resource/${id}`}>
+          Edit
+        </Link>
+      </Button>
     </div>
   );
 }

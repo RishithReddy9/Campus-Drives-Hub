@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const buffer = Buffer.from(bytes);
 
   // Create unique key inside the bucket
-  const key = `drives/${Date.now()}-${file.name}`;
+  const key = `drives/${Date.now()}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET!,

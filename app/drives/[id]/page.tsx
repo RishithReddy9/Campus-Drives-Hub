@@ -21,69 +21,142 @@ export default async function DrivePage({ params }: DrivePageProps) {
   if (!drive) return notFound();
 
   return (
-    <article className="p-6 bg-white shadow rounded">
-      <h1 className="text-2xl font-bold">{drive.company}</h1>
-      <p className="mt-2 text-gray-600"><span className="font-semibold">Compensation:</span> {drive.compensation}</p>
-      {drive.roles ?? <label className="mt-2 text-gray-600"><span className="font-semibold">Roles:</span> 
-        {drive.roles}
-      </label>}
-      {drive.skills ?? <label className="mt-2 text-gray-600"><span className="font-semibold">Skills:</span> {drive.skills}</label>}
-      <div className="mt-4">
-        <label className="mt-2 text-gray-600">Company Summary</label>
-        <p className="mt-1">{drive.summary}</p>
-      </div>
+    <article className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-md transition-colors">
+      {/* Header */}
+      <header className="border-b pb-4 mb-6 border-gray-200 dark:border-gray-700">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{drive.company}</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <span className="font-semibold">💰 Compensation:</span> {drive.compensation}
+        </p>
+        {drive.roles?.length > 0 && (
+          <p className="mt-1 text-gray-600 dark:text-gray-400">
+            <span className="font-semibold">🛠 Roles:</span> {drive.roles.join(", ")}
+          </p>
+        )}
+        {drive.skills?.length > 0 && (
+          <p className="mt-1 text-gray-600 dark:text-gray-400">
+            <span className="font-semibold">⚡ Skills:</span> {drive.skills.join(", ")}
+          </p>
+        )}
+      </header>
 
-      <h2 className="mt-6 font-semibold">Full Experience</h2>
+      {/* Summary */}
+      <section className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">🏢 Company Summary</h2>
+        <p className="mt-2 text-gray-700 dark:text-gray-300">{drive.summary}</p>
+      </section>
 
-      {(drive.rounds ?? []).length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold">Interview Rounds</h3>
-          <ul className="list-disc list-inside mt-2">
-            {drive.rounds.map((round, i) => (
-              <li key={i}>
-                <span className="font-semibold">{new Date(round.date).toLocaleDateString()}:</span> {round.round}
-              </li>
+      {/* Job Descriptions */}
+      {drive.pdfs?.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">📄 Job Descriptions</h2>
+          <div className="grid gap-4 sm:grid-cols-2 truncate overflow-hidden">
+            {drive.pdfs.map((key: any, i: number) => (
+              <PDFCard key={i} keyName={key} driveId={id} />
             ))}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
-      {(drive.experiences ?? []).map((markdown, i) => (
-        <div key={i} className="mt-2 prose max-w-none bg-white">
-          <h1 className="font-semibold text-lg">Experience {i+1}</h1>
-          <MarkdownClient markdown={markdown} />
-        </div>
-      ))}
+      {/* Interview Rounds */}
+      {(drive.rounds ?? []).length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            📝 Interview Rounds
+          </h2>
 
-      {/* JDs */}
-      {drive.pdfs?.length > 0 && (
-        <div className="mt-4">
-          <h2 className="text-lg font-semibold mb-2">Job Description</h2>
-          {drive.pdfs.map((key: any, i: number) => (
-            <PDFCard key={i} keyName={key} driveId={id} />
-          ))}
-        </div>
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-100 dark:bg-gray-800">
+                <tr>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200"
+                  >
+                    Date
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200"
+                  >
+                    Round
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                {drive.rounds.map((round, i) => (
+                  <tr
+                    key={i}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm text-gray-800 dark:text-gray-100 whitespace-nowrap">
+                      {new Date(round.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {round.round}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+
+      {/* Experiences */}
+      {(drive.experiences ?? []).length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">💡 Experiences</h2>
+          <div className="mt-3 space-y-6">
+            {drive.experiences.map((markdown, i) => (
+              <div
+                key={i}
+                className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+              >
+                <h3 className="font-semibold text-lg mb-2 text-gray-800 dark:text-gray-100">
+                  Experience {i + 1}
+                </h3>
+                <MarkdownClient markdown={markdown} />
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Resources */}
       {drive.resources?.length > 0 && (
-        <div className="mt-4">
-          <h2 className="text-lg font-semibold mb-2">Resources</h2>
-          {drive.resources.map((key: any, i: number) => (
-            <PDFCard key={i} keyName={key} driveId={id} />
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">📚 Resources</h2>
+          <div className="grid gap-4 sm:grid-cols-2 truncate overflow-hidden">
+            {drive.resources.map((key: any, i: number) => (
+              <PDFCard key={i} keyName={key} driveId={id} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Tags */}
+      {drive.tags?.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-4">
+          {drive.tags.map((tag: string) => (
+            <span
+              key={tag}
+              className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full"
+            >
+              #{tag}
+            </span>
           ))}
         </div>
       )}
 
-      <div className="flex gap-2 mt-4">
-        {drive.tags?.map((tag: string) => (
-          <span key={tag} className="px-2 py-1 text-xs bg-gray-200 rounded">{tag}</span>
-        ))}
-      </div>
-
+      {/* Admin */}
       {session && <AdminControls id={id} />}
 
-      <CommentsSection driveId={id} />
+      {/* Comments */}
+      <section className="mt-8">
+        <CommentsSection driveId={id} />
+      </section>
     </article>
   );
 }

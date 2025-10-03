@@ -150,62 +150,137 @@ export default function CommentsSection({ driveId }: { driveId: string }) {
   };
 
   const renderTime = (iso?: string) => iso ? new Date(iso).toLocaleString() : "";
-
+  
   return (
-    <section className="mt-8">
-      <h3 className="text-lg font-semibold mb-3">Comments</h3>
+    <section className="mt-10">
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        💬 Comments
+      </h3>
 
+      {/* Add comment box */}
       {session ? (
-        <div className="mb-4">
-          <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a comment..." className="w-full border p-2 rounded mb-2" rows={3} />
-          <div className="flex gap-2">
-            <button onClick={postComment} disabled={posting} className="px-3 py-1 bg-blue-600 text-white rounded">
+        <div className="mb-6">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Add your thoughts..."
+            className="w-full border border-gray-300 dark:border-gray-700 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
+            rows={3}
+          />
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={postComment}
+              disabled={posting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+            >
               {posting ? "Posting…" : "Post Comment"}
             </button>
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-500 mb-4">Log in to add comments.</p>
+        <p className="text-sm text-gray-500 mb-6">
+          Please log in to post comments.
+        </p>
       )}
 
-      {loading ? <p>Loading comments…</p> : (
-        comments.length === 0 ? <p className="text-sm text-gray-500">No comments yet — be the first.</p> :
-        <ul className="space-y-4">
+      {/* Comments List */}
+      {loading ? (
+        <p className="text-gray-500">Loading comments…</p>
+      ) : comments.length === 0 ? (
+        <p className="text-gray-500">No comments yet — be the first!</p>
+      ) : (
+        <ul className="space-y-5">
           {comments.map((c) => {
-            const canDeleteComment = (userEmail && c.authorEmail === userEmail) || isAdmin;
+            const canDeleteComment =
+              (userEmail && c.authorEmail === userEmail) || isAdmin;
             return (
-              <li key={String(c._id)} className="border rounded p-3">
+              <li
+                key={String(c._id)}
+                className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+              >
+                {/* Header */}
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="font-medium">{c.authorEmail ?? "Anonymous"}</div>
-                    <div className="text-sm text-gray-600">{renderTime(c.createdAt)}</div>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {c.authorEmail ?? "Anonymous"}
+                    </span>
+                    <span className="ml-2 text-xs text-gray-500">
+                      {renderTime(c.createdAt)}
+                    </span>
                   </div>
                   {canDeleteComment && (
-                    <button onClick={() => deleteComment(c._id as string)} className="text-sm text-red-500">Delete</button>
+                    <button
+                      onClick={() => deleteComment(c._id as string)}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
                   )}
                 </div>
 
-                <p className="mt-2 whitespace-pre-wrap">{c.text}</p>
+                {/* Body */}
+                <p className="mt-2 text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                  {c.text}
+                </p>
 
-                <div className="mt-3 pl-4 border-l">
+                {/* Replies */}
+                <div className="mt-4 space-y-3 pl-4 border-l border-gray-200 dark:border-gray-700">
                   {(c.replies || []).map((r) => {
-                    const canDeleteReply = (userEmail && r.authorEmail === userEmail) || isAdmin;
+                    const canDeleteReply =
+                      (userEmail && r.authorEmail === userEmail) || isAdmin;
                     return (
-                      <div key={String(r._id)} className="mb-2">
-                        <div className="text-sm font-medium">{r.authorEmail ?? "Anonymous"} <span className="text-xs text-gray-500 ml-2">{renderTime(r.createdAt)}</span></div>
-                        <div className="text-sm">{r.text}</div>
-                        {canDeleteReply && (
-                          <button onClick={() => deleteReply(c._id as string, r._id as string)} className="text-xs text-red-500 mt-1">Delete reply</button>
-                        )}
+                      <div
+                        key={String(r._id)}
+                        className="p-2 rounded bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                              {r.authorEmail ?? "Anonymous"}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              {renderTime(r.createdAt)}
+                            </span>
+                          </div>
+                          {canDeleteReply && (
+                            <button
+                              onClick={() =>
+                                deleteReply(c._id as string, r._id as string)
+                              }
+                              className="text-xs text-red-500 hover:underline"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                          {r.text}
+                        </p>
                       </div>
                     );
                   })}
 
+                  {/* Reply box */}
                   {session && (
-                    <div className="mt-2">
-                      <input value={replyText[c._id || ""] || ""} onChange={(e) => setReplyText((s) => ({ ...s, [c._id || ""]: e.target.value }))} placeholder="Write a reply..." className="w-full border p-1 rounded mb-1" />
-                      <div>
-                        <button onClick={() => postReply(c._id as string)} className="text-sm px-2 py-1 bg-gray-200 rounded">Reply</button>
+                    <div className="mt-3">
+                      <input
+                        value={replyText[c._id || ""] || ""}
+                        onChange={(e) =>
+                          setReplyText((s) => ({
+                            ...s,
+                            [c._id || ""]: e.target.value,
+                          }))
+                        }
+                        placeholder="Write a reply..."
+                        className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded-lg text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
+                      />
+                      <div className="flex justify-end mt-2">
+                        <button
+                          onClick={() => postReply(c._id as string)}
+                          className="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                        >
+                          Reply
+                        </button>
                       </div>
                     </div>
                   )}

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
+import { Button } from "@heroui/button";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
@@ -97,12 +98,12 @@ export default function SubmitResource({ currentFolderId }: { currentFolderId?: 
   return (
     <>
       {/* Global Add Button */}
-      <button
-        onClick={() => setOpen(true)}
-        className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+      <Button
+        onPress={() => setOpen(true)}
+        color="primary"
       >
-        + Add Resource
-      </button>
+        Add Resource
+      </Button>
 
       {/* Modal */}
       {open && (

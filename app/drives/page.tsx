@@ -3,69 +3,66 @@
 import useSWR from "swr";
 import Link from "next/link";
 import { useState } from "react";
+import { Input } from "@heroui/input";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DrivesPage() {
   const { data: drives, error, isLoading } = useSWR("/api/drives", fetcher);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("");
 
   if (error) return <p className="text-red-500">❌ Failed to load drives.</p>;
 
   const filteredDrives = (drives || []).filter((d: any) => {
     const searchText = search.toLowerCase();
-    return (
-      (!filter || d.company.toLowerCase().includes(filter.toLowerCase())) &&
-      (d.company.toLowerCase().includes(searchText) ||
-        d.role.toLowerCase().includes(searchText) ||
-        d.summary.toLowerCase().includes(searchText))
-    );
+    return d.company.toLowerCase().includes(searchText);
   });
 
   return (
-    <section>
-      <h1 className="text-2xl font-bold mb-4">Drives & Interview Experiences</h1>
+    <section className="p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">🎯 Drives & Experiences</h1>
 
-      <div className="flex gap-4 mb-4">
-        <input
+      {/* Search */}
+      <div className="flex gap-4 mb-8 w-full justify-center">
+        <Input
           type="text"
-          placeholder="Search by company, role..."
+          placeholder="Search by company..."
+          className="max-w-md w-full dark:bg-gray-800 rounded-xl"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 rounded w-full"
+          variant="bordered"
         />
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option value="">All Companies</option>
-          {[...new Set((drives || []).map((d: any) => d.company))].map((c:any) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
       </div>
 
-      <div className="grid gap-4">
+      {/* Drives Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          "Loading..."
+          <p className="col-span-full text-center text-gray-500 dark:text-gray-400">Loading...</p>
         ) : filteredDrives.length > 0 ? (
           filteredDrives.map((d: any) => (
-            <article key={d._id} className="p-4 bg-white shadow rounded">
-              <Link href={`/drives/${d._id}`}>
-                <h2 className="font-semibold">
-                  {d.company} — {d.role}
+            <Link
+              key={d._id}
+              href={`/drives/${d._id}`}
+              className="group block rounded-2xl border border-gray-200 dark:border-gray-700 
+                         bg-white dark:bg-gray-900 shadow-sm hover:shadow-lg 
+                         hover:scale-[1.02] transition-all duration-200 p-5"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 group-hover:text-blue-600">
+                  {d.company}
                 </h2>
-                <p className="text-sm text-gray-500">{d.date}</p>
-                <p className="mt-2">{d.summary}</p>
-              </Link>
-            </article>
+                <span className="text-md text-gray-500 dark:text-gray-400">{d.roles[0]}</span>
+              </div>
+              <p className="text-md text-gray-700 dark:text-gray-300 line-clamp-3">
+                {d.compensation}
+              </p>
+              <div className="mt-3 text-blue-600 dark:text-blue-400 text-sm font-medium">
+                Read more →
+              </div>
+            </Link>
           ))
         ) : (
-          <p className="text-gray-500">No drives found.</p>
+          <p className="col-span-full text-center text-gray-500 dark:text-gray-400">No drives found.</p>
         )}
       </div>
     </section>
