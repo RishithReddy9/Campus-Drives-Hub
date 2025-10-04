@@ -48,7 +48,8 @@ export default function LoginPage() {
     const res = await signIn("credentials", {
       email,
       otp,
-      redirect: false,
+      redirect: true,
+      callbackUrl: "/",
     });
 
     if (res?.error) {
@@ -56,8 +57,6 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-
-    router.replace("/");
   };
 
   return (
