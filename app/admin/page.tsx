@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
+import SubmitForm from "@/components/SubmitForm";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -18,10 +19,7 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-bold">Admin Dashboard</h1>
       <p className="mt-2">Welcome, {session.user?.email}</p>
 
-      <div className="mt-6 space-y-4">
-        <Link href="/submit" className="block p-3 bg-gray-100 rounded">➕ Add New Drive</Link>
-        <Link href="/submit-resources" className="block p-3 bg-gray-100 rounded">📚 Manage Resources</Link>
-      </div>
+      <SubmitForm />
     </section>
   );
 }

@@ -46,9 +46,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/drives/:path*",
-    "/resources/:path*",
-    "/calendar/:path*",
     "/admin/:path*",
   ],
 };
