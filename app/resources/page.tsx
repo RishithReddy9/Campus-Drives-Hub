@@ -4,7 +4,6 @@ import Link from "next/link";
 import SubmitResource from "@/components/SubmitResource";
 import { useSession } from "next-auth/react";
 import { Folder, FileText, BookOpen } from "lucide-react";
-import AuthGuard from "@/components/AuthGuard";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -29,7 +28,6 @@ export default function ResourcesPage() {
   };
 
   return (
-    <AuthGuard>
     <section>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -65,6 +63,5 @@ export default function ResourcesPage() {
         ))}
       </div>
     </section>
-    </AuthGuard>
   );
 }

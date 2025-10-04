@@ -4,7 +4,6 @@ import useSWR from "swr";
 import Link from "next/link";
 import { useState } from "react";
 import { Input } from "@heroui/input";
-import AuthGuard from "@/components/AuthGuard";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -20,7 +19,6 @@ export default function DrivesPage() {
   });
 
   return (
-    <AuthGuard>
     <section className="p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">🎯 Drives & Experiences</h1>
 
@@ -68,6 +66,5 @@ export default function DrivesPage() {
         )}
       </div>
     </section>
-    </AuthGuard>
   );
 }
