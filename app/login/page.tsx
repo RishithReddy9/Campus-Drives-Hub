@@ -76,7 +76,7 @@ export default function LoginPage() {
             label="Email Address"
             placeholder="example@domain.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.toLowerCase())}
             variant="bordered"
             startContent={<Mail className="w-4 h-4 text-gray-400" />}
             required
