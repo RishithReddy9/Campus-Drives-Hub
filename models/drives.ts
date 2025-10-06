@@ -52,7 +52,7 @@ const RoundSchema = new Schema({
 const DriveSchema = new Schema<IDrive>({
   company: { type: String, required: true },
   summary: { type: String, required: true },
-  experiences: { type: [String], required: true },
+  experiences: { type: [String] },
   tags: [{ type: String }],
   pdfs: [{ type: String }],
   compensation: { type: String, required: true },
