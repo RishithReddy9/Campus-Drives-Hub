@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     // Basic validation
     const { company, summary, experiences, tags, pdfs, resources, compensation, skills, roles, rounds, comments } = body;
-    if (!company || !summary || !experiences || !Array.isArray(experiences) || experiences.length === 0) {
+    if (!company || !summary || !Array.isArray(experiences) || experiences.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 

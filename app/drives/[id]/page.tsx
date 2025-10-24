@@ -151,7 +151,7 @@ export default async function DrivePage({ params }: DrivePageProps) {
       )}
 
       {/* Admin */}
-      {session && <AdminControls id={id} />}
+      {session && session.user.role ==='admin' && <AdminControls id={id} />}
 
       {/* Comments */}
       <section className="mt-8">
